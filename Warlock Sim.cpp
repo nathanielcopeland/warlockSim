@@ -5,6 +5,7 @@ float immolateDotTime = 0;
 #include <functional>
 #include <time.h> 
 #include <stdlib.h> 
+#include <algorithm>
 #include "warlock.h";
 
 void incinerate() {

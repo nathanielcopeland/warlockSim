@@ -13,7 +13,15 @@ class warlock
 
 	int conflagCharges = 2;
 	int backdraft = 0;
+	
+	//talents
+	//row 15
+	bool flashover = true;
+	bool Eradication = false; // not implemented yet
+	bool soulfire = false; //soulfire not implemented yet
 
+	//row 30
+	
 	//damage meters
 
 	//incinerate
@@ -53,11 +61,32 @@ class warlock
 	double immolateDotTimeLeft = 0; //counts down
 	double immolateDotTime = 0; //counts up
 
+	//buff timers
+	double reverseEntropyTimer = 0;
+
 	//cooldown timers
 	double conflagTimer = 11;
-
+	
 	bool currentlyCasting = false;
+
+	//proc per minute
+	double fightLength = 0;
+	double lastTrigger = 0;
+	
 public:
+
+	void procPerMinute(double PPM) {
+		double coeff = 1;
+		double real_ppm = PPM * coeff;
+		
+		double seconds = std::min((fightLength - lastTrigger) , 3.5);
+		double new_ppm = real_ppm * (seconds / 60);
+
+		if (rand() % 100 <= (new_ppm * 100)) {
+			reverseEntropyTimer = 8;
+			haste += 15;
+		}
+	}
 
 	void dpsChart(double fightLength) {
 		//incinerate
@@ -107,6 +136,14 @@ public:
 		if (castTime < 0) {
 			castTime = 0;
 		}
+
+		if (reverseEntropyTimer > 0) {
+			reverseEntropyTimer -= 0.1;
+			if (reverseEntropyTimer == 0) {
+				haste -= 15;
+			}
+		}
+		
 		
 		if (conflagCharges <= 1) {
 			conflagTimer -= 0.1;
@@ -150,11 +187,13 @@ public:
 				{
 					bonusDamage = bonusDamage * 2;
 					incinerateCritDamage += bonusDamage;
+					procPerMinute(2.5);
 					incinerateCritHits += 1;
 					soulShardFragments += 1;
 				}
 				else {
 					incinerateDamage += bonusDamage;
+					procPerMinute(2.5); // reverse entropy
 					incinerateHits += 1;
 				}
 
@@ -178,6 +217,11 @@ public:
 			int baseDamage = intellect * spellPercent;
 			int masteryRand = mastery;
 			int damage = baseDamage * (1 + (versatility / 100));
+
+			if (flashover == true) { //if flashover talent conflag deals 30% more damage
+				damage = damage * (1.30);
+				backdraft += 1;
+			}
 			int bonusDamage = damage * (1 + ((mastery + (rand() % masteryRand)) / 100));
 
 			if (rand() % 100 <= crit)
@@ -185,11 +229,12 @@ public:
 				bonusDamage = bonusDamage * 2;
 				conflagCritDamage += bonusDamage;
 				conflagCritHits += 1;
-
+				procPerMinute(2.5);
 			}
 			else {
 				conflagDamage += bonusDamage;
 				conflagHits += 1;
+				procPerMinute(2.5);
 			}
 			soulShardFragments += 5;
 			conflagCharges -= 1;
@@ -226,7 +271,7 @@ public:
 
 			chaosBoltDamage += bonusDamage;
 			chaosBoltHits += 1;
-
+			procPerMinute(2.5);
 			soulShardFragments -= 20;
 		}
 	}
@@ -252,10 +297,12 @@ public:
 				bonusDamage = bonusDamage * 2;
 				immolateCritDamage += bonusDamage;
 				immolateCritHits += 1;
+				procPerMinute(2.5);
 			}
 			else {
 				immolateDamage += bonusDamage;
 				immolateHits += 1;
+				procPerMinute(2.5);
 			}
 
 			std::cout << "Cast time = " << castTime << " damage = " << damage << " bonusDamage = " << bonusDamage << std::endl;
@@ -299,6 +346,7 @@ public:
 				dotBonusDamage = dotBonusDamage * 2;
 				immolateDotCritDamage += dotBonusDamage;
 				immolateDotCritHits += 1;
+				procPerMinute(2.5);
 				if (rand() % 2 == 1) {
 					soulShardFragments += 1;
 				}
@@ -306,6 +354,7 @@ public:
 			else {
 				immolateDotDamage += dotBonusDamage;
 				immolateDotHits += 1;
+				procPerMinute(2.5);
 			}
 
 			dotSum += dotBonusDamage;
